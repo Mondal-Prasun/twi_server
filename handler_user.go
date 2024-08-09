@@ -15,6 +15,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//this handler for creating user
+
 func (apiCfg *apiCfg) signUpUserHandler(c *gin.Context) {
 
 	cred := User{}
@@ -25,7 +27,7 @@ func (apiCfg *apiCfg) signUpUserHandler(c *gin.Context) {
 		})
 		return
 	}
-
+	//password hashed here by bcrypt library
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cred.Password), bcrypt.DefaultCost)
 
 	if err != nil {
@@ -36,6 +38,7 @@ func (apiCfg *apiCfg) signUpUserHandler(c *gin.Context) {
 		return
 	}
 
+	// new user created here
 	cratedUser, err := apiCfg.db.CreateUser(context.Background(), database.CreateUserParams{
 		ID:       uuid.New(),
 		Username: cred.Username,
@@ -49,6 +52,7 @@ func (apiCfg *apiCfg) signUpUserHandler(c *gin.Context) {
 		Accesstoken: uuid.New(),
 	})
 
+	//all database err handled here
 	if err != nil {
 
 		log.Println(err.Error())
@@ -75,9 +79,72 @@ func (apiCfg *apiCfg) signUpUserHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"message":     "user created",
 		"id":          cratedUser.ID,
+		"username":    cratedUser.Username,
 		"email":       cratedUser.Email,
 		"image":       cratedUser.Image,
 		"accessToken": cratedUser.Accesstoken.String(),
+	})
+
+}
+
+// this handler is for login user
+func (apiCfg *apiCfg) logInUserHandler(c *gin.Context) {
+	cred := struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{}
+
+	if err := c.BindJSON(&cred); err != nil {
+		c.JSON(http.StatusNotAcceptable, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	if cred.Email == "" || cred.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Email and password is required",
+		})
+		return
+	}
+
+	// this func matches email and return password and id
+	dbUser, err := apiCfg.db.GetUserPasswordByEmail(context.Background(), cred.Email)
+
+	if err != nil {
+		c.JSON(404, gin.H{
+			"error": "No user found",
+		})
+		return
+	}
+
+	passErr := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(cred.Password))
+
+	if passErr != nil {
+		c.JSON(404, gin.H{
+			"error": "Invalid password",
+		})
+		return
+	}
+
+	dbUserDetails, err := apiCfg.db.RefreshUserAccessToken(context.Background(), database.RefreshUserAccessTokenParams{
+		ID:          dbUser.ID,
+		Accesstoken: uuid.New(),
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"id":          dbUserDetails.ID,
+		"username":    dbUserDetails.Username,
+		"email":       dbUserDetails.Email,
+		"image":       dbUserDetails.Image,
+		"accessToken": dbUserDetails.Accesstoken,
 	})
 
 }

@@ -5,5 +5,11 @@ RETURNING *;
 
 
 
--- name: GetUserById :one
-SELECT * FROM users WHERE id = $1;
+-- name: GetUserPasswordByEmail :one
+SELECT password,id FROM users WHERE email = $1;
+
+-- name: RefreshUserAccessToken :one
+UPDATE users
+SET accessToken = $2
+WHERE id = $1
+RETURNING id,username,email,image, accessToken;

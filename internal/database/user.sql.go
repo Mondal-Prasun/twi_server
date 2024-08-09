@@ -55,21 +55,50 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const getUserById = `-- name: GetUserById :one
-SELECT id, username, password, image, email, createdat, updatedat, accesstoken FROM users WHERE id = $1
+const getUserPasswordByEmail = `-- name: GetUserPasswordByEmail :one
+SELECT password,id FROM users WHERE email = $1
 `
 
-func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserById, id)
-	var i User
+type GetUserPasswordByEmailRow struct {
+	Password string
+	ID       uuid.UUID
+}
+
+func (q *Queries) GetUserPasswordByEmail(ctx context.Context, email string) (GetUserPasswordByEmailRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserPasswordByEmail, email)
+	var i GetUserPasswordByEmailRow
+	err := row.Scan(&i.Password, &i.ID)
+	return i, err
+}
+
+const refreshUserAccessToken = `-- name: RefreshUserAccessToken :one
+UPDATE users
+SET accessToken = $2
+WHERE id = $1
+RETURNING id,username,email,image, accessToken
+`
+
+type RefreshUserAccessTokenParams struct {
+	ID          uuid.UUID
+	Accesstoken uuid.UUID
+}
+
+type RefreshUserAccessTokenRow struct {
+	ID          uuid.UUID
+	Username    string
+	Email       string
+	Image       sql.NullString
+	Accesstoken uuid.UUID
+}
+
+func (q *Queries) RefreshUserAccessToken(ctx context.Context, arg RefreshUserAccessTokenParams) (RefreshUserAccessTokenRow, error) {
+	row := q.db.QueryRowContext(ctx, refreshUserAccessToken, arg.ID, arg.Accesstoken)
+	var i RefreshUserAccessTokenRow
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
-		&i.Password,
-		&i.Image,
 		&i.Email,
-		&i.Createdat,
-		&i.Updatedat,
+		&i.Image,
 		&i.Accesstoken,
 	)
 	return i, err
