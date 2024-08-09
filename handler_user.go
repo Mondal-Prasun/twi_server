@@ -1,24 +1,21 @@
 package main
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
+	"log"
 	"net/http"
+	"strings"
+	"time"
 
+	"github.com/Mondal-Prasun/custom_backend/internal/database"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var users = []User{}
-
-type User struct {
-	Id          uuid.UUID `json:"id"`
-	Username    string    `json:"username"`
-	Password    string    `json:"password"`
-	Email       string    `json:"email"`
-	AccessToken uuid.UUID `json:"accessToken"`
-}
-
-func signUpUserHandler(c *gin.Context) {
+func (apiCfg *apiCfg) signUpUserHandler(c *gin.Context) {
 
 	cred := User{}
 
@@ -29,15 +26,6 @@ func signUpUserHandler(c *gin.Context) {
 		return
 	}
 
-	for _, i := range users {
-		if i.Username == cred.Username {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error": "User already excits",
-			})
-			return
-		}
-	}
-
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cred.Password), bcrypt.DefaultCost)
 
 	if err != nil {
@@ -45,13 +33,51 @@ func signUpUserHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
-	cred.Id = uuid.New()
-	cred.AccessToken = uuid.New()
-	cred.Password = string(hashedPassword)
 
-	users = append(users, cred)
+	cratedUser, err := apiCfg.db.CreateUser(context.Background(), database.CreateUserParams{
+		ID:       uuid.New(),
+		Username: cred.Username,
+		Password: string(hashedPassword),
+		Image: sql.NullString{
+			Valid: false,
+		},
+		Email:       cred.Email,
+		Createdat:   time.Now().Local(),
+		Updatedat:   time.Now().Local(),
+		Accesstoken: uuid.New(),
+	})
 
-	c.JSON(http.StatusCreated, users)
+	if err != nil {
+
+		log.Println(err.Error())
+
+		if strings.Contains(err.Error(), "users_email_key") {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "An account already excists with this email accont",
+			})
+			return
+		} else if strings.Contains(err.Error(), "users_username_key") {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Username already excists",
+			})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("Internal server error: %v", err.Error()),
+			})
+			return
+		}
+
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message":     "user created",
+		"id":          cratedUser.ID,
+		"email":       cratedUser.Email,
+		"image":       cratedUser.Image,
+		"accessToken": cratedUser.Accesstoken.String(),
+	})
 
 }
