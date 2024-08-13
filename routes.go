@@ -11,4 +11,7 @@ func allRoutes(route *gin.Engine, apiCfg *apiCfg) {
 	user.POST("/signUp", apiCfg.signUpUserHandler) // this handler is to create a user
 	user.POST("/logIn", apiCfg.logInUserHandler)   // this handler is to login the user
 
+	post := route.Group("/post")
+	post.POST("/createPost", convertImage(), apiCfg.createPostHandler)
+
 }

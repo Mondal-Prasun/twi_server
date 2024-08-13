@@ -11,6 +11,17 @@ import (
 	"github.com/google/uuid"
 )
 
+type Post struct {
+	ID           uuid.UUID
+	Username     string
+	Userid       uuid.UUID
+	Contenttext  string
+	Contextimage sql.NullString
+	Likes        int32
+	Createdat    time.Time
+	Updatedat    time.Time
+}
+
 type User struct {
 	ID          uuid.UUID
 	Username    string
