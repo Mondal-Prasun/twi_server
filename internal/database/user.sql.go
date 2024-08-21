@@ -55,6 +55,23 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getUserDetails = `-- name: GetUserDetails :one
+SELECT id,username,image FROM users WHERE id = $1
+`
+
+type GetUserDetailsRow struct {
+	ID       uuid.UUID
+	Username string
+	Image    sql.NullString
+}
+
+func (q *Queries) GetUserDetails(ctx context.Context, id uuid.UUID) (GetUserDetailsRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserDetails, id)
+	var i GetUserDetailsRow
+	err := row.Scan(&i.ID, &i.Username, &i.Image)
+	return i, err
+}
+
 const getUserPasswordByEmail = `-- name: GetUserPasswordByEmail :one
 SELECT password,id FROM users WHERE email = $1
 `

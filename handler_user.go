@@ -148,3 +148,34 @@ func (apiCfg *apiCfg) logInUserHandler(c *gin.Context) {
 	})
 
 }
+
+// this handler is for user details
+
+func (apiCfg *apiCfg) getUserDetails(c *gin.Context) {
+	userId := c.Param("userId")
+
+	userUuid, err := uuid.Parse(userId)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": fmt.Sprintf("Invalid user id %v", err.Error()),
+		})
+		return
+	}
+
+	dbUserDetails, err := apiCfg.db.GetUserDetails(context.Background(), userUuid)
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": fmt.Sprintf("Invalid user id %v", err.Error()),
+		})
+		return
+	}
+
+	c.JSON(202, gin.H{
+		"id":       dbUserDetails.ID,
+		"username": dbUserDetails.Username,
+		"image":    dbUserDetails.Image,
+	})
+
+}

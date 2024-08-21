@@ -4,6 +4,9 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
 
+-- name: GetUserDetails :one
+SELECT id,username,image FROM users WHERE id = $1;
+
 
 -- name: GetUserPasswordByEmail :one
 SELECT password,id FROM users WHERE email = $1;
