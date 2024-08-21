@@ -28,7 +28,7 @@ func main() {
 
 	db := database.New(dbConnection)
 
-	apiCfg := apiCfg{
+  apiCfg := apiCfg{
 		db: db,
 	}
 

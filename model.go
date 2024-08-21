@@ -39,3 +39,23 @@ func convertPostToSendJson(p *database.Post) Post {
 		UpdatedAt:    p.Updatedat,
 	}
 }
+
+type Comment struct {
+	Id        uuid.UUID `json:"id"`
+	PostId    uuid.UUID `json:"postId"`
+	UserId    uuid.UUID `json:"userId"`
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func convertCommnetToCommentJson(c *database.Comment) Comment {
+	return Comment{
+		Id:        c.ID,
+		PostId:    c.Postid,
+		UserId:    c.Userid,
+		Comment:   c.Comment,
+		UpdatedAt: c.Updatedat,
+		CreatedAt: c.Createdat,
+	}
+}

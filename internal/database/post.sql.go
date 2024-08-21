@@ -54,3 +54,35 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 	)
 	return i, err
 }
+
+const deletePost = `-- name: DeletePost :exec
+DELETE FROM posts
+WHERE id = $1 AND userId = $2
+`
+
+type DeletePostParams struct {
+	ID     uuid.UUID
+	Userid uuid.UUID
+}
+
+func (q *Queries) DeletePost(ctx context.Context, arg DeletePostParams) error {
+	_, err := q.db.ExecContext(ctx, deletePost, arg.ID, arg.Userid)
+	return err
+}
+
+const likePost = `-- name: LikePost :exec
+UPDATE posts
+SET likes = likes + 1,
+    updatedAt = $2
+WHERE id = $1
+`
+
+type LikePostParams struct {
+	ID        uuid.UUID
+	Updatedat time.Time
+}
+
+func (q *Queries) LikePost(ctx context.Context, arg LikePostParams) error {
+	_, err := q.db.ExecContext(ctx, likePost, arg.ID, arg.Updatedat)
+	return err
+}

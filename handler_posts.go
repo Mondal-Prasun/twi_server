@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/Mondal-Prasun/custom_backend/internal/database"
@@ -12,6 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// /this function is for create post
 func (apiCfg *apiCfg) createPostHandler(c *gin.Context) {
 
 	imageBse64 := c.MustGet("imageBase64").(string)
@@ -63,4 +65,53 @@ func (apiCfg *apiCfg) createPostHandler(c *gin.Context) {
 
 	c.JSON(200, convertPostToSendJson(&createdPost))
 
+}
+
+///this handler is for delete a post
+
+func (apiCfg *apiCfg) deletePostHandler(c *gin.Context) {
+	postId := c.Param("postId")
+
+	userId := struct {
+		UserID string `json:"userId"`
+	}{}
+
+	if err := c.BindJSON(&userId); err != nil {
+		c.JSON(404, gin.H{
+			"error": fmt.Sprintf("User id not found :%v", err.Error()),
+		})
+		return
+	}
+
+	postUuid, err := uuid.Parse(postId)
+
+	if err != nil {
+		c.JSON(404, gin.H{
+			"error": "Invalid post id",
+		})
+		return
+	}
+
+	userUuid, err := uuid.Parse(userId.UserID)
+
+	if err != nil {
+		c.JSON(404, gin.H{
+			"error": "Invalid user id",
+		})
+		return
+	}
+
+	if err := apiCfg.db.DeletePost(context.Background(), database.DeletePostParams{
+		ID:     postUuid,
+		Userid: userUuid,
+	}); err != nil {
+		c.JSON(404, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "post deleted",
+	})
 }
