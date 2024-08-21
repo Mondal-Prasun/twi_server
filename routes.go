@@ -8,9 +8,10 @@ func allRoutes(route *gin.Engine, apiCfg *apiCfg) {
 	health.GET("/ready", healthhandler) //this is for the server health check
 
 	user := route.Group("/user")
-	user.POST("/signUp", apiCfg.signUpUserHandler)             // this handler is to create a user
-	user.POST("/logIn", apiCfg.logInUserHandler)               // this handler is to login the user
-	user.GET("/getUserDetails/:userId", apiCfg.getUserDetails) //this handler is to get user details
+	user.POST("/signUp", apiCfg.signUpUserHandler)                                        // this handler is to create a user
+	user.POST("/logIn", apiCfg.logInUserHandler)                                          // this handler is to login the user
+	user.GET("/getUserDetails/:userId", apiCfg.getUserDetails)                            //this handler is to get user details
+	user.PATCH("/uploadUserImage/:userId", convertImage(), apiCfg.uploadUserProfileImage) // this handeler is for uploading user image
 
 	post := route.Group("/post")
 	post.POST("/createPost", convertImage(), apiCfg.createPostHandler) //this handler is to post a feed

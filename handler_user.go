@@ -79,10 +79,55 @@ func (apiCfg *apiCfg) signUpUserHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"message":     "user created",
 		"id":          cratedUser.ID,
-		"username":    cratedUser.Username,
-		"email":       cratedUser.Email,
-		"image":       cratedUser.Image,
 		"accessToken": cratedUser.Accesstoken.String(),
+	})
+
+}
+
+//this handler is to upload profile image
+
+func (apiCfg *apiCfg) uploadUserProfileImage(c *gin.Context) {
+
+	imageBase64 := c.GetString("imageBase64")
+
+	userId := c.Param("userId")
+
+	userUuid, err := uuid.Parse(userId)
+
+	if err != nil {
+		c.JSON(404, gin.H{
+			"error": fmt.Sprintf("invalid user id %v", err.Error()),
+		})
+		return
+	}
+
+	if imageBase64 == "" {
+		c.JSON(404, gin.H{
+			"error": "Image is empty",
+		})
+		return
+	}
+
+	userDetails, err := apiCfg.db.UploadUserImage(context.Background(), database.UploadUserImageParams{
+		ID: userUuid,
+		Image: sql.NullString{
+			String: imageBase64,
+			Valid:  true,
+		},
+	})
+
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": fmt.Sprintf("Internal server error %v", err.Error()),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"id":          userDetails.ID,
+		"username":    userDetails.Username,
+		"image":       userDetails.Image,
+		"accessToken": userDetails.Accesstoken,
 	})
 
 }

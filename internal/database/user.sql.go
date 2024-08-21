@@ -16,7 +16,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id,username,password,image,email,createdAt,updatedAt,accessToken)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, username, password, image, email, createdat, updatedat, accesstoken
+RETURNING id,accessToken
 `
 
 type CreateUserParams struct {
@@ -30,7 +30,12 @@ type CreateUserParams struct {
 	Accesstoken uuid.UUID
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+type CreateUserRow struct {
+	ID          uuid.UUID
+	Accesstoken uuid.UUID
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.ID,
 		arg.Username,
@@ -41,17 +46,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Updatedat,
 		arg.Accesstoken,
 	)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.Password,
-		&i.Image,
-		&i.Email,
-		&i.Createdat,
-		&i.Updatedat,
-		&i.Accesstoken,
-	)
+	var i CreateUserRow
+	err := row.Scan(&i.ID, &i.Accesstoken)
 	return i, err
 }
 
@@ -115,6 +111,37 @@ func (q *Queries) RefreshUserAccessToken(ctx context.Context, arg RefreshUserAcc
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.Image,
+		&i.Accesstoken,
+	)
+	return i, err
+}
+
+const uploadUserImage = `-- name: UploadUserImage :one
+UPDATE users
+SET image = $2
+WHERE id = $1
+RETURNING id, username, image, accessToken
+`
+
+type UploadUserImageParams struct {
+	ID    uuid.UUID
+	Image sql.NullString
+}
+
+type UploadUserImageRow struct {
+	ID          uuid.UUID
+	Username    string
+	Image       sql.NullString
+	Accesstoken uuid.UUID
+}
+
+func (q *Queries) UploadUserImage(ctx context.Context, arg UploadUserImageParams) (UploadUserImageRow, error) {
+	row := q.db.QueryRowContext(ctx, uploadUserImage, arg.ID, arg.Image)
+	var i UploadUserImageRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
 		&i.Image,
 		&i.Accesstoken,
 	)
