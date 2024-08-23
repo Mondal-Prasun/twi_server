@@ -41,3 +41,9 @@ type User struct {
 	Updatedat   time.Time
 	Accesstoken uuid.UUID
 }
+
+type UserFollow struct {
+	Followerid uuid.UUID
+	Followedid uuid.UUID
+	Followdate sql.NullTime
+}

@@ -11,6 +11,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type apiCfg struct {
+	db *database.Queries
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -28,7 +32,7 @@ func main() {
 
 	db := database.New(dbConnection)
 
-  apiCfg := apiCfg{
+	apiCfg := apiCfg{
 		db: db,
 	}
 
@@ -41,8 +45,4 @@ func main() {
 		log.Fatal("Problem occoured in server: ", err)
 	}
 
-}
-
-type apiCfg struct {
-	db *database.Queries
 }
